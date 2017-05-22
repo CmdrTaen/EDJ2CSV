@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+"""
+Load a journal file from disk and turn the Scan events into a CSV File
+"""
+
+import os
+import json
+import sys
+
+
+def run(filename):
+    """
+    Make a csv of scan items and save it as a CSV
+    :param filename:
+    :return:
+    """
+    table_cols = set()
+    table_data = list()
+
+    with open(filename, "r") as inputfile:
+        for line in inputfile:
+            journal_item = json.loads(line)
+            if journal_item.get("event", None) == "Scan":
+                for itemname in journal_item:
+                    ## build up our table header
+                    if itemname not in table_cols:
+                        table_cols.add(itemname)
+                    table_data.append(journal_item)
+
+    # we now have a list of headings and some scan rows we can print out
+    sorted_heading = sorted(table_cols)
+    print ", ".join(sorted_heading)
+
+    for row in table_data:
+        rowvalues = list()
+        for heading in sorted_heading:
+            if heading in row:
+                value = str(row[heading])
+                if "," in value:
+                    value = "'{}'".format(value)
+                rowvalues.append(value)
+            else:
+                # not all things have all values
+                rowvalues.append("")
+
+        print ", ".join(rowvalues)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print >> sys.stderr, "Usage: makecsv.py JOURNAL_FILE\n"
+        sys.exit(1)
+    else:
+        run(sys.argv[1])
